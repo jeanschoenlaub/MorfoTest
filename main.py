@@ -1,16 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def add_randomly_placed_squares(random_images, square_size = 50):
+def add_randomly_placed_squares(random_images, image_shape, square_size = 50):
     half_square = square_size // 2
     batches = []
 
     for batch in random_images:
         processed_batch = []
         for image in batch:
-            center_row, center_col = image.shape[0] // 2, image.shape[1] // 2
-            image[center_row - half_square : center_row + half_square,
-                center_col - half_square : center_col + half_square] = [255, 255, 255]
+            #First define a random postion fo the white square making sure it's entirely in the picture
+            random_position_white_square_y = np.random.randint(half_square, high=image_shape[0]-half_square, dtype=int)
+            random_position_white_square_x = np.random.randint(half_square, high=image_shape[1]-half_square, dtype=int)
+
+            image[random_position_white_square_y - half_square : random_position_white_square_y + half_square,
+                random_position_white_square_x  - half_square : random_position_white_square_x  + half_square] = [255, 255, 255]
             processed_batch.append(image)
         batches.append(np.array(processed_batch))
     return batches
@@ -41,7 +44,7 @@ if __name__ == "__main__":
     # Generatw  batches of images with random RGB values
     random_image_batches = generate_random_images(num_batches, batch_size, image_shape)
 
-    processed_images = add_randomly_placed_squares(random_image_batches)
+    processed_images = add_randomly_placed_squares(random_image_batches, image_shape)
 
     # Display images with matplotlib to test
     display_images(processed_images[1])
