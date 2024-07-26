@@ -1,5 +1,51 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+
+def count_color_pixels(image, color):
+    color = np.array(color)
+    count = np.sum(np.all(image == color, axis=-1))
+    print(count)
+    return count
+
+def calculate_statistics(batches):
+    white = [255, 255, 255]
+    black = [0, 0, 0]
+
+    batch_counter=0
+    batch_statistics = []
+
+    for batch in batches:
+        white_counts = []
+        black_counts = []
+        batch_counter += 1
+
+        for image in batch:
+            white_count = count_color_pixels(image, white)
+            black_count = count_color_pixels(image, black)
+            white_counts.append(white_count)
+            black_counts.append(black_count)
+        
+        print(f"Batch {batch_counter} - White counts: {white_counts}, Black counts: {black_counts}")
+        
+        batch_stats = {
+            'batch_id': "batch_" + str(batch_counter),
+            'white_avg': np.mean(white_counts),
+            'white_min': np.min(white_counts),
+            'white_max': np.max(white_counts),
+            'white_std': np.std(white_counts),
+            'black_avg': np.mean(black_counts),
+            'black_min': np.min(black_counts),
+            'black_max': np.max(black_counts),
+            'black_std': np.std(black_counts)
+        }
+
+        batch_statistics.append(batch_stats)
+    
+    df_batch_statistics = pd.DataFrame(batch_statistics)
+    
+    return df_batch_statistics
+
 
 def random_crop(images, crop_size):
     crop_height, crop_width = crop_size
@@ -72,7 +118,7 @@ def generate_random_images(num_batches, batch_size, image_shape):
 
     return batches
 
-def display_images(batch, num_images=5):
+def display_images(batch, num_images=20):
     fig, axes = plt.subplots(1, num_images, figsize=(20, 4))
     for i in range(num_images):
         ax = axes[i]
@@ -92,7 +138,12 @@ if __name__ == "__main__":
 
     processed_images_with_squares = add_randomly_placed_squares(random_image_batches, image_shape, random_black_and_white_square_size_in_px)
 
-    randomly_cropped_images =random_crop(processed_images_with_squares, crop_size)
+    randomly_cropped_images=random_crop(processed_images_with_squares, crop_size)
+
+    # Calculate statistics for each batch and color
+    stats_df = calculate_statistics(randomly_cropped_images)
+
+    print(stats_df)
 
     # Display images with matplotlib to test
     display_images(randomly_cropped_images[0])
