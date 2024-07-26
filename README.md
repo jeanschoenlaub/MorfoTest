@@ -1,12 +1,12 @@
 Got to task 4 only, with not much testing in the code and the pixel counting is wrong...
 
-For the open questions: 
-7:
+---
+Open question 7:
 Simple test case: Create a image (or batch of images) with known pixel values and test that outpu match input. 
 Complex: Create a batch of images with wrong pixel values, wrong batch size, wong images shapes (example samller then the squares) .. and check that the appropriate error messages show up
 
 ---
-10: 
+Open question 10:
 For deployment we could consider using ECS because we have a docker container. 
 But I have no experiece with this so if I know this is pipeline is modular (in the sense that the defined input and output don't need additional logic), I would deploy on Lambda (because memory limits and processing time fit the lambda limits). 
 
@@ -18,4 +18,20 @@ The lambda would watch for events on the bucket (new file additions), and count 
  3 - I would then inject the statist panda data frame to the relevant db tale (eg. using pyscopg2 if PostgreDb)
  4 - On succesful invoke I would add that the lambda send a message to relavant user using SNS (eg. email) 
  4 - Additionally on errors I would send errors to an SQS dead letter queue and pout a cloud watch alarm on the queue.  
- 6 - Maek sure all the setup services have least privelege permissions with IAM
+ 6 - Make sure all the setup services have least privelege permissions with IAM
+
+For the DB schema, if relational DB is chosen, I would consider: 
+TABLE Pipeline_X_Batches
+SERIAL (PK) - batch_id
+FLOAT - white_px_avg
+FLOAT - white_px_std
+....
+STING / DATETIME - Created_at
+
+
+If relevant I would store the data for each image
+TABLE Pipeline_X_Images
+SERIAL (PK) - image_id
+INT (FK) - batch_id (refences batch_id FROM Pipeline_X_Batches)
+INT - white_px_count
+INT - black_px_count
