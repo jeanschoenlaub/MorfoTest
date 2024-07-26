@@ -1,7 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def add_randomly_placed_squares(random_images, image_shape, square_size = 50):
+def random_crop(image, image_shape, crop_size):
+    crop_height, crop_width = crop_size
+
+    # first determine what is max x and y
+    max_x = image.shape[1] - crop_width
+    max_y = image.shape[0] - crop_height
+    
+    # then choose random starting crop
+    x = np.random.randint(0, max_x + 1)
+    y = np.random.randint(0, max_y + 1)
+
+    # crop the image
+    cropped_image = image[y:y + crop_height, x:x + crop_width]
+
+    return cropped_image
+
+def add_randomly_placed_squares(random_images, image_shape, square_size):
     half_square = square_size // 2
     batches = []
 
@@ -36,7 +52,7 @@ def add_randomly_placed_squares(random_images, image_shape, square_size = 50):
                   random_position_black_square_x - half_square:random_position_black_square_x + half_square] = [0, 0, 0]
 
             processed_batch.append(image)
-            
+
         batches.append(np.array(processed_batch))
     return batches
 
@@ -50,24 +66,32 @@ def generate_random_images(num_batches, batch_size, image_shape):
 
     return batches
 
-def display_images(batch, num_images=5):
-    fig, axes = plt.subplots(1, num_images, figsize=(20, 4))
-    for i in range(num_images):
-        ax = axes[i]
-        ax.imshow(batch[i])
-        ax.axis('off')
+def display_images(batch, num_images=1):
+
+    plt.figure(figsize=(8, 6))
+    plt.imshow(batch)
+
+    # fig, axes = plt.subplots(1, num_images, figsize=(20, 4))
+    # for i in range(num_images):
+    #     ax = axes[i]
+    #     ax.imshow(batch[i])
+    #     ax.axis('off')
     plt.show()
 
 if __name__ == "__main__":
     num_batches = 5
     batch_size = 20
     image_shape = (256, 512, 3)
+    random_black_and_white_square_size_in_px = 50
+    crop_size = (200, 200)
 
     # Generatw  batches of images with random RGB values
     random_image_batches = generate_random_images(num_batches, batch_size, image_shape)
 
-    processed_images = add_randomly_placed_squares(random_image_batches, image_shape)
+    processed_images_with_squares = add_randomly_placed_squares(random_image_batches, image_shape, random_black_and_white_square_size_in_px)
+
+    randomly_cropped_images =random_crop(processed_images_with_squares[0][0], image_shape, crop_size)
 
     # Display images with matplotlib to test
-    display_images(processed_images[1])
+    display_images(randomly_cropped_images)
     
