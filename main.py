@@ -2,10 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from config import IMAGE_SHAPE, BATCH_SIZE, NUM_BATCHES, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX, CROP_SIZE
+
 def count_color_pixels(image, color):
     color = np.array(color)
     count = np.sum(np.all(image == color, axis=-1))
-    print(count)
     return count
 
 def calculate_statistics(batches):
@@ -25,8 +26,6 @@ def calculate_statistics(batches):
             black_count = count_color_pixels(image, black)
             white_counts.append(white_count)
             black_counts.append(black_count)
-        
-        print(f"Batch {batch_counter} - White counts: {white_counts}, Black counts: {black_counts}")
         
         batch_stats = {
             'batch_id': "batch_" + str(batch_counter),
@@ -127,24 +126,21 @@ def display_images(batch, num_images=20):
     plt.show()
 
 if __name__ == "__main__":
-    num_batches = 5
-    batch_size = 20
-    image_shape = (256, 512, 3)
-    random_black_and_white_square_size_in_px = 50
-    crop_size = (200, 200)
+    # Generate batches of images with random RGB values
+    random_image_batches = generate_random_images(NUM_BATCHES, BATCH_SIZE, IMAGE_SHAPE)
 
-    # Generatw  batches of images with random RGB values
-    random_image_batches = generate_random_images(num_batches, batch_size, image_shape)
+    # Add 1 black and 1 white non overlapping square 
+    processed_images_with_squares = add_randomly_placed_squares(random_image_batches, IMAGE_SHAPE, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX)
 
-    processed_images_with_squares = add_randomly_placed_squares(random_image_batches, image_shape, random_black_and_white_square_size_in_px)
+    # Crop the image randomly
+    randomly_cropped_images = random_crop(processed_images_with_squares, CROP_SIZE)
 
-    randomly_cropped_images=random_crop(processed_images_with_squares, crop_size)
-
-    # Calculate statistics for each batch and color
+    # Calculate statistics (nb of black and white pixels) for each batch
     stats_df = calculate_statistics(randomly_cropped_images)
 
-    print(stats_df)
+    # Save the DataFrame to a Parquet file
+    parquet_file_path = 'batch_statistics.parquet'
+    stats_df.to_parquet(parquet_file_path, index=False)
 
     # Display images with matplotlib to test
     display_images(randomly_cropped_images[0])
-    
