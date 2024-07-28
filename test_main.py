@@ -9,6 +9,7 @@ from main import (
     calculate_statistics,
     random_crop,
     generate_random_images,
+    validate_batches,
 ) 
 
 class TestImageProcessing(unittest.TestCase):
@@ -57,7 +58,17 @@ class TestImageProcessing(unittest.TestCase):
         self.assertEqual(len(cropped_batches), self.num_batches, "Number of cropped batches is incorrect.")
         self.assertEqual(cropped_batches[0].shape, (self.batch_size, *self.crop_size, 3), "Cropped batch shape is incorrect.")
 
+    def test_corrupted_images(self):
+        #Generate a batch with the wrong shape
+        corrupted_batches = generate_random_images(self.num_batches, self.batch_size, (self.image_shape[0], self.image_shape[1]-1))
 
+        #Insert an image with wrong pixel values
+        corrupted_image = np.full((self.image_shape[0], self.image_shape[1]-1), 300, dtype=np.uint8)
+        corrupted_batches[1][1] = corrupted_image
+
+        # Validate and check for exception
+        with self.assertRaises(ValueError):
+            validate_batches(corrupted_batches, self.image_shape)
 
 if __name__ == "__main__":
     unittest.main()

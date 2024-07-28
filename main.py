@@ -4,6 +4,16 @@ import pandas as pd
 
 from config import IMAGE_SHAPE, BATCH_SIZE, NUM_BATCHES, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX, CROP_SIZE
 
+#Check the image is of the expected shape and pixel colors are right 
+def is_corrupted_image(image, expected_shape):
+    return image.shape != expected_shape or np.any(image < 0) or np.any(image > 255)
+
+def validate_batches(batches, expected_shape):
+    for batch in batches:
+        for image in batch:
+            if is_corrupted_image(image, expected_shape):
+                raise ValueError("Corrupted image detected in batch")
+
 def count_color_pixels(image, color):
     color = np.array(color)
     count = np.sum(np.all(image == color, axis=-1))
@@ -128,6 +138,9 @@ def display_images(batch, num_images=20):
 if __name__ == "__main__":
     # Generate batches of images with random RGB values
     random_image_batches = generate_random_images(NUM_BATCHES, BATCH_SIZE, IMAGE_SHAPE)
+
+    # MAke sure the images are valid
+    validate_batches(random_image_batches, IMAGE_SHAPE)
 
     # Add 1 black and 1 white non overlapping square 
     processed_images_with_squares = add_randomly_placed_squares(random_image_batches, IMAGE_SHAPE, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX)
