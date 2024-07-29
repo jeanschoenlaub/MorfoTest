@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 # Install any needed packages specified in requirements.txt
-RUN pip install requirements.txt
+RUN pip install -r requirements.txt
 
 # Command to run tests
 CMD ["python", "functions/main.py"]

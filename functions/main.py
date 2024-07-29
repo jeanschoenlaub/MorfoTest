@@ -1,8 +1,15 @@
 import numpy as np
+import os
+from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import pandas as pd
+import boto3
 
-from config import IMAGE_SHAPE, BATCH_SIZE, NUM_BATCHES, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX, CROP_SIZE
+from config import IMAGE_SHAPE, BATCH_SIZE, NUM_BATCHES, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX,CROP_SIZE, S3_BUCKET_NAME ,S3_OUTPUT_FILE 
+
+load_dotenv()
+aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
 #Check the image is of the expected shape and pixel colors are right 
 def is_corrupted_image(image, expected_shape):
@@ -135,6 +142,18 @@ def display_images(batch, num_images=20):
         ax.axis('off')
     plt.show()
 
+def upload_to_s3(file_name, bucket, object_name=None):
+    # Upload the file
+    s3_client = boto3.client('s3',  
+                             aws_access_key_id=aws_access_key_id,
+                             aws_secret_access_key=aws_secret_access_key)
+    try:
+        response = s3_client.upload_file(file_name, bucket, object_name)
+    except Exception as e:
+        print(f"Error uploading file to S3: {e}")
+        return False
+    return True
+
 if __name__ == "__main__":
     # Generate batches of images with random RGB values
     random_image_batches = generate_random_images(NUM_BATCHES, BATCH_SIZE, IMAGE_SHAPE)
@@ -156,6 +175,17 @@ if __name__ == "__main__":
     # Save the DataFrame to a Parquet file
     parquet_file_path = 'batch_statistics.parquet'
     stats_df.to_parquet(parquet_file_path, index=False)
+
+    print(aws_access_key_id)
+
+    # Upload the Parquet file to S3
+    bucket_name = S3_BUCKET_NAME
+    s3_object_name = S3_OUTPUT_FILE
+    upload_successful = upload_to_s3(parquet_file_path, bucket_name, s3_object_name)
+    if upload_successful:
+        print(f"File uploaded to S3: s3://{bucket_name}/{s3_object_name}")
+    else:
+        print("File upload failed")
 
     # Display images with matplotlib to test
     display_images(randomly_cropped_images[0])
