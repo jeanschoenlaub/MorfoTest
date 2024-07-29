@@ -5,15 +5,27 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import boto3
 
-from config import IMAGE_SHAPE, BATCH_SIZE, NUM_BATCHES, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX,CROP_SIZE, S3_BUCKET_NAME ,S3_OUTPUT_FILE 
+from config import (
+    img_shape,
+    BATCH_SIZE,
+    NUM_BATCHES,
+    RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX,
+    CROP_SIZE,
+    S3_BUCKET_NAME,
+    S3_OUTPUT_FILE
+)
 
 load_dotenv()
 aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
-#Check the image is of the expected shape and pixel colors are right 
+
+# Check the image is of the expected shape and pixel colors are right
 def is_corrupted_image(image, expected_shape):
-    return image.shape != expected_shape or np.any(image < 0) or np.any(image > 255)
+    return (image.shape != expected_shape
+            or np.any(image < 0)
+            or np.any(image > 255))
+
 
 def validate_batches(batches, expected_shape):
     for batch in batches:
@@ -21,16 +33,18 @@ def validate_batches(batches, expected_shape):
             if is_corrupted_image(image, expected_shape):
                 raise ValueError("Corrupted image detected in batch")
 
+
 def count_color_pixels(image, color):
     color = np.array(color)
     count = np.sum(np.all(image == color, axis=-1))
     return count
 
+
 def calculate_statistics(batches):
     white = [255, 255, 255]
     black = [0, 0, 0]
 
-    batch_counter=0
+    batch_counter = 0
     batch_statistics = []
 
     for batch in batches:
@@ -43,7 +57,7 @@ def calculate_statistics(batches):
             black_count = count_color_pixels(image, black)
             white_counts.append(white_count)
             black_counts.append(black_count)
-        
+
         batch_stats = {
             'batch_id': "batch_" + str(batch_counter),
             'white_avg': np.mean(white_counts),
@@ -57,9 +71,9 @@ def calculate_statistics(batches):
         }
 
         batch_statistics.append(batch_stats)
-    
+
     df_batch_statistics = pd.DataFrame(batch_statistics)
-    
+
     return df_batch_statistics
 
 
@@ -73,7 +87,7 @@ def random_crop(images, crop_size):
             # first determine what is max x and y
             max_x = image.shape[1] - crop_width
             max_y = image.shape[0] - crop_height
-            
+
             # then choose random starting crop
             x = np.random.randint(0, max_x + 1)
             y = np.random.randint(0, max_y + 1)
@@ -85,39 +99,57 @@ def random_crop(images, crop_size):
 
     return cropped_batches
 
-def add_randomly_placed_squares(random_images, image_shape, square_size):
+
+def add_randomly_placed_squares(random_images, img_shape, square_size):
     half_square = square_size // 2
     batches = []
 
     for batch in random_images:
         processed_batch = []
         for image in batch:
-            #First define a random postion fo the white square making sure it's entirely in the picture
-            random_position_white_square_y = np.random.randint(half_square, high=image_shape[0]-half_square, dtype=int)
-            random_position_white_square_x = np.random.randint(half_square, high=image_shape[1]-half_square, dtype=int)
+            # First define a random postion fo the white square
+            # making sure it's entirely in the picture
+            rand_pos_white_square_y = np.random.randint(
+                half_square, high=img_shape[0]-half_square, dtype=int
+            )
+            rand_pos_white_square_x = np.random.randint(
+                half_square, high=img_shape[1]-half_square, dtype=int
+            )
 
-           # Then we define an array of possible x and y positions for the black square by taking away overlapping 
+            # Then we define an array of possible x and y positions
+            # for the black square by taking away overlapping
             possible_positions = [
-                (x, y) for x in range(half_square, image_shape[1] - half_square) # also make sure in
-                for y in range(half_square, image_shape[0] - half_square)
+                (x, y) for x in range(half_square, img_shape[1] - half_square)
+                for y in range(half_square, img_shape[0] - half_square)
                 if not (
-                    (x + half_square > random_position_white_square_x - half_square) and
-                    (x - half_square < random_position_white_square_x + half_square) and
-                    (y + half_square > random_position_white_square_y - half_square) and
-                    (y - half_square < random_position_white_square_y + half_square)
+                    (x + half_square >
+                        rand_pos_white_square_x - half_square) and
+                    (x - half_square <
+                        rand_pos_white_square_x + half_square) and
+                    (y + half_square >
+                        rand_pos_white_square_y - half_square) and
+                    (y - half_square <
+                        rand_pos_white_square_y + half_square)
                 )
             ]
 
             # Choose a random position from the possible positions
-            random_position_black_square_x, random_position_black_square_y = possible_positions[np.random.randint(len(possible_positions))]
+            (rand_pos_black_square_x,
+                rand_pos_black_square_y) = possible_positions[
+                np.random.randint(len(possible_positions))
+            ]
 
-             # Place the black square at the random position
-            image[random_position_white_square_y - half_square : random_position_white_square_y + half_square,
-                random_position_white_square_x  - half_square : random_position_white_square_x  + half_square] = [255, 255, 255]
-            
-             # Place the black square at the random position
-            image[random_position_black_square_y - half_square:random_position_black_square_y + half_square,
-                  random_position_black_square_x - half_square:random_position_black_square_x + half_square] = [0, 0, 0]
+            # Place the black square at the random position
+            image[rand_pos_white_square_y - half_square:
+                  rand_pos_white_square_y + half_square,
+                  rand_pos_white_square_x - half_square:
+                  rand_pos_white_square_x + half_square] = [255, 255, 255]
+
+            # Place the black square at the random position
+            image[rand_pos_black_square_y - half_square:
+                  rand_pos_black_square_y + half_square,
+                  rand_pos_black_square_x - half_square:
+                  rand_pos_black_square_x + half_square] = [0, 0, 0]
 
             processed_batch.append(image)
 
@@ -125,14 +157,17 @@ def add_randomly_placed_squares(random_images, image_shape, square_size):
     return batches
 
 
-def generate_random_images(num_batches, batch_size, image_shape):
+def generate_random_images(num_batches, batch_size, img_shape):
     batches = []
 
     for batch in range(num_batches):
-        batch = np.random.randint(0, 255, (batch_size, *image_shape), dtype=np.uint8) 
+        batch = np.random.randint(
+            0, 255, (batch_size, *img_shape), dtype=np.uint8
+        )
         batches.append(batch)
 
     return batches
+
 
 def display_images(batch, num_images=20):
     fig, axes = plt.subplots(1, num_images, figsize=(20, 4))
@@ -142,30 +177,40 @@ def display_images(batch, num_images=20):
         ax.axis('off')
     plt.show()
 
+
 def upload_to_s3(file_name, bucket, object_name=None):
     # Upload the file
-    s3_client = boto3.client('s3',  
+    s3_client = boto3.client('s3',
                              aws_access_key_id=aws_access_key_id,
                              aws_secret_access_key=aws_secret_access_key)
     try:
-        response = s3_client.upload_file(file_name, bucket, object_name)
+        s3_client.upload_file(file_name, bucket, object_name)
     except Exception as e:
         print(f"Error uploading file to S3: {e}")
         return False
     return True
 
+
 if __name__ == "__main__":
     # Generate batches of images with random RGB values
-    random_image_batches = generate_random_images(NUM_BATCHES, BATCH_SIZE, IMAGE_SHAPE)
+    random_image_batches = generate_random_images(
+        NUM_BATCHES, BATCH_SIZE, img_shape
+    )
 
     # MAke sure the images are valid
-    validate_batches(random_image_batches, IMAGE_SHAPE)
+    validate_batches(random_image_batches, img_shape)
 
-    # Add 1 black and 1 white non overlapping square 
-    processed_images_with_squares = add_randomly_placed_squares(random_image_batches, IMAGE_SHAPE, RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX)
+    # Add 1 black and 1 white non overlapping square
+    processed_images_with_squares = add_randomly_placed_squares(
+        random_image_batches,
+        img_shape,
+        RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX
+    )
 
     # Crop the image randomly
-    randomly_cropped_images = random_crop(processed_images_with_squares, CROP_SIZE)
+    randomly_cropped_images = random_crop(
+        processed_images_with_squares, CROP_SIZE
+    )
 
     # Calculate statistics (nb of black and white pixels) for each batch
     stats_df = calculate_statistics(randomly_cropped_images)
@@ -181,7 +226,9 @@ if __name__ == "__main__":
     # Upload the Parquet file to S3
     bucket_name = S3_BUCKET_NAME
     s3_object_name = S3_OUTPUT_FILE
-    upload_successful = upload_to_s3(parquet_file_path, bucket_name, s3_object_name)
+    upload_successful = upload_to_s3(
+        parquet_file_path, bucket_name, s3_object_name
+    )
     if upload_successful:
         print(f"File uploaded to S3: s3://{bucket_name}/{s3_object_name}")
     else:
