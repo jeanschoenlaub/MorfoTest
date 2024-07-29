@@ -38,3 +38,7 @@ jobs:
     - name: Run tests
       run: |
         python functions/test_main.py
+
+    - name: Run main
+      run: |
+        python functions/main.py
