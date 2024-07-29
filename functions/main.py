@@ -151,6 +151,8 @@ if __name__ == "__main__":
     # Calculate statistics (nb of black and white pixels) for each batch
     stats_df = calculate_statistics(randomly_cropped_images)
 
+    print(stats_df)
+
     # Save the DataFrame to a Parquet file
     parquet_file_path = 'batch_statistics.parquet'
     stats_df.to_parquet(parquet_file_path, index=False)
