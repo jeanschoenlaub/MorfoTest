@@ -6,7 +6,7 @@ import pandas as pd
 import boto3
 
 from config import (
-    img_shape,
+    IMAGE_SHAPE,
     BATCH_SIZE,
     NUM_BATCHES,
     RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX,
@@ -194,16 +194,16 @@ def upload_to_s3(file_name, bucket, object_name=None):
 if __name__ == "__main__":
     # Generate batches of images with random RGB values
     random_image_batches = generate_random_images(
-        NUM_BATCHES, BATCH_SIZE, img_shape
+        NUM_BATCHES, BATCH_SIZE, IMAGE_SHAPE
     )
 
     # MAke sure the images are valid
-    validate_batches(random_image_batches, img_shape)
+    validate_batches(random_image_batches, IMAGE_SHAPE)
 
     # Add 1 black and 1 white non overlapping square
     processed_images_with_squares = add_randomly_placed_squares(
         random_image_batches,
-        img_shape,
+        IMAGE_SHAPE,
         RANDOM_BLACK_AND_WHITE_SQUARE_SIZE_IN_PX
     )
 
@@ -220,9 +220,7 @@ if __name__ == "__main__":
     # Save the DataFrame to a Parquet file
     parquet_file_path = 'batch_statistics.parquet'
     stats_df.to_parquet(parquet_file_path, index=False)
-
-    print(aws_access_key_id)
-
+    
     # Upload the Parquet file to S3
     bucket_name = S3_BUCKET_NAME
     s3_object_name = S3_OUTPUT_FILE
