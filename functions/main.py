@@ -20,7 +20,7 @@ aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
 
-# Check the image is of the expected shape and pixel colors are right
+#Check the image is of the expected shape and pixel colors are right
 def is_corrupted_image(image, expected_shape):
     return (image.shape != expected_shape
             or np.any(image < 0)
