@@ -220,7 +220,7 @@ if __name__ == "__main__":
     # Save the DataFrame to a Parquet file
     parquet_file_path = 'batch_statistics.parquet'
     stats_df.to_parquet(parquet_file_path, index=False)
-    
+
     # Upload the Parquet file to S3
     bucket_name = S3_BUCKET_NAME
     s3_object_name = S3_OUTPUT_FILE
